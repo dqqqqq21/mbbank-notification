@@ -1,6 +1,7 @@
 import Foundation
 import Network
 import AVFoundation
+import UIKit
 
 // MARK: - WebServer
 // Máy chủ HTTP/1.1 nhúng dùng Network framework, lắng nghe cổng 8080 trên mọi giao diện mạng.
@@ -56,6 +57,16 @@ final class WebServer {
         } catch {
             print("[WebServer] Không thể khởi động: \(error.localizedDescription)")
             isRunning = false
+        }
+    }
+
+    // Đảm bảo listener còn sống; nếu đã chết thì dựng lại. Gọi khi quay lại foreground.
+    func ensureRunning() {
+        if listener == nil || !isRunning {
+            listener?.cancel()
+            listener = nil
+            isRunning = false
+            start()
         }
     }
 
@@ -617,36 +628,147 @@ final class WebServer {
 // MARK: - BackgroundKeeper
 // Phát âm thanh im lặng lặp vô hạn để giữ app (và NWListener) sống khi chạy nền.
 // Mẹo này giúp các app sideload duy trì hoạt động ở chế độ nền.
-final class BackgroundKeeper {
+final class BackgroundKeeper: NSObject, AVAudioPlayerDelegate {
     static let shared = BackgroundKeeper()
 
     private var player: AVAudioPlayer?
+    private var watchdog: Timer?
+    private var bgTask: UIBackgroundTaskIdentifier = .invalid
+    private var observing = false
 
-    private init() {}
+    private override init() { super.init() }
 
     func start() {
+        configureSession()
+        startPlayer()
+        registerObservers()
+        startWatchdog()
+    }
+
+    // MARK: - Phiên âm thanh
+
+    private func configureSession() {
         do {
-            // Cho phép phát nền + trộn với âm thanh khác.
+            // .playback + .mixWithOthers: phát nền mà vẫn cho nhạc khác chạy cùng.
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, options: [.mixWithOthers])
             try session.setActive(true, options: [])
-
-            let wavData = BackgroundKeeper.makeSilentWAV(seconds: 1.0)
-            let player = try AVAudioPlayer(data: wavData)
-            player.numberOfLoops = -1 // lặp vô hạn
-            player.volume = 0.0
-            player.prepareToPlay()
-            player.play()
-            self.player = player
-            print("[BackgroundKeeper] Đang phát âm thanh im lặng để giữ nền.")
         } catch {
-            print("[BackgroundKeeper] Lỗi: \(error.localizedDescription)")
+            print("[BackgroundKeeper] Lỗi session: \(error.localizedDescription)")
         }
     }
 
-    // Tạo file WAV 16-bit PCM im lặng hoàn toàn trong bộ nhớ (không cần file tài nguyên).
-    private static func makeSilentWAV(seconds: Double) -> Data {
-        let sampleRate: Int = 8000        // tần số lấy mẫu thấp -> dữ liệu nhỏ
+    private func startPlayer() {
+        do {
+            if player == nil {
+                // Audio biên độ cực nhỏ (gần như im lặng nhưng vẫn là "audio thật")
+                // để iOS coi là đang phát và giữ app sống ở nền.
+                let wavData = BackgroundKeeper.makeKeepAliveWAV(seconds: 30.0)
+                let p = try AVAudioPlayer(data: wavData)
+                p.numberOfLoops = -1 // lặp vô hạn
+                p.volume = 0.01
+                p.delegate = self
+                p.prepareToPlay()
+                player = p
+            }
+            if player?.isPlaying != true {
+                player?.play()
+            }
+        } catch {
+            print("[BackgroundKeeper] Lỗi player: \(error.localizedDescription)")
+        }
+    }
+
+    // Kiểm tra định kỳ: nếu audio bị dừng thì kích hoạt lại + phát tiếp.
+    private func startWatchdog() {
+        watchdog?.invalidate()
+        let t = Timer(timeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.ensurePlaying()
+        }
+        RunLoop.main.add(t, forMode: .common)
+        watchdog = t
+    }
+
+    private func ensurePlaying() {
+        if player?.isPlaying != true {
+            configureSession()
+            startPlayer()
+        }
+    }
+
+    // MARK: - Theo dõi sự kiện làm gián đoạn audio
+
+    private func registerObservers() {
+        guard !observing else { return }
+        observing = true
+        let nc = NotificationCenter.default
+        nc.addObserver(self, selector: #selector(handleInterruption(_:)),
+                       name: AVAudioSession.interruptionNotification, object: nil)
+        nc.addObserver(self, selector: #selector(handleRouteChange(_:)),
+                       name: AVAudioSession.routeChangeNotification, object: nil)
+        nc.addObserver(self, selector: #selector(handleForeground),
+                       name: UIApplication.didBecomeActiveNotification, object: nil)
+        nc.addObserver(self, selector: #selector(handleBackground),
+                       name: UIApplication.didEnterBackgroundNotification, object: nil)
+    }
+
+    // Sau khi bị ngắt (cuộc gọi, app khác chiếm audio) kết thúc -> phát lại.
+    @objc private func handleInterruption(_ note: Notification) {
+        guard let info = note.userInfo,
+              let raw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+        if type == .ended {
+            configureSession()
+            startPlayer()
+        }
+    }
+
+    // Đổi route (cắm/rút tai nghe, Bluetooth) -> đảm bảo còn phát.
+    @objc private func handleRouteChange(_ note: Notification) {
+        ensurePlaying()
+    }
+
+    @objc private func handleForeground() {
+        endBackgroundTask()
+        ensurePlaying()
+        WebServer.shared.ensureRunning() // dựng lại listener nếu đã chết
+    }
+
+    @objc private func handleBackground() {
+        // Xin thêm thời gian nền và đảm bảo audio đang phát khi chuyển sang app khác.
+        beginBackgroundTaskIfNeeded()
+        configureSession()
+        startPlayer()
+    }
+
+    private func beginBackgroundTaskIfNeeded() {
+        guard bgTask == .invalid else { return }
+        bgTask = UIApplication.shared.beginBackgroundTask(withName: "WebServerKeepAlive") { [weak self] in
+            self?.endBackgroundTask()
+        }
+    }
+
+    private func endBackgroundTask() {
+        if bgTask != .invalid {
+            UIApplication.shared.endBackgroundTask(bgTask)
+            bgTask = .invalid
+        }
+    }
+
+    // MARK: - AVAudioPlayerDelegate
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        startPlayer() // phòng khi vòng lặp kết thúc bất thường
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        ensurePlaying()
+    }
+
+    // MARK: - Tạo WAV giữ nền (16-bit PCM, biên độ cực nhỏ, tần số thấp -> gần như không nghe được)
+
+    private static func makeKeepAliveWAV(seconds: Double) -> Data {
+        let sampleRate: Int = 8000
         let channels: Int = 1
         let bitsPerSample: Int = 16
         let frameCount = Int(Double(sampleRate) * seconds)
@@ -658,7 +780,6 @@ final class BackgroundKeeper {
 
         var data = Data()
 
-        // Helpers ghi little-endian.
         func appendString(_ s: String) { data.append(contentsOf: Array(s.utf8)) }
         func appendUInt32LE(_ v: UInt32) {
             data.append(UInt8(v & 0xff))
@@ -670,13 +791,14 @@ final class BackgroundKeeper {
             data.append(UInt8(v & 0xff))
             data.append(UInt8((v >> 8) & 0xff))
         }
+        func appendInt16LE(_ v: Int16) { appendUInt16LE(UInt16(bitPattern: v)) }
 
         // Header RIFF/WAVE (44 byte).
         appendString("RIFF")
         appendUInt32LE(UInt32(chunkSize))
         appendString("WAVE")
         appendString("fmt ")
-        appendUInt32LE(16)                       // kích thước sub-chunk fmt
+        appendUInt32LE(16)
         appendUInt16LE(1)                        // PCM
         appendUInt16LE(UInt16(channels))
         appendUInt32LE(UInt32(sampleRate))
@@ -686,8 +808,15 @@ final class BackgroundKeeper {
         appendString("data")
         appendUInt32LE(UInt32(dataSize))
 
-        // Dữ liệu mẫu toàn số 0 = im lặng.
-        data.append(Data(count: dataSize))
+        // Sóng sin tần số rất thấp (~20Hz), biên độ ~16/32767 -> gần như không nghe thấy,
+        // nhưng là tín hiệu audio thật để iOS không tạm dừng app ở chế độ nền.
+        let amplitude: Double = 16.0
+        let frequency: Double = 20.0
+        let twoPiFOverSR = 2.0 * Double.pi * frequency / Double(sampleRate)
+        for i in 0..<frameCount {
+            let sample = Int16(amplitude * sin(twoPiFOverSR * Double(i)))
+            appendInt16LE(sample)
+        }
 
         return data
     }
