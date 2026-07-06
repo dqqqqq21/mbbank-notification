@@ -16,6 +16,7 @@
 		847FEBB72C4C30740020112F /* notiUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847FEBB62C4C30740020112F /* notiUITestsLaunchTests.swift */; };
 		847FEBC42C4C30C80020112F /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847FEBC32C4C30C80020112F /* NotificationManager.swift */; };
 		847FEBCA2C4C34300020112F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847FEBC92C4C34300020112F /* AppDelegate.swift */; };
+		847FEBD12C4C30C80020112F /* WebServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 847FEBD02C4C30C80020112F /* WebServer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +49,7 @@
 		847FEBB62C4C30740020112F /* notiUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = notiUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		847FEBC32C4C30C80020112F /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		847FEBC92C4C34300020112F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		847FEBD02C4C30C80020112F /* WebServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebServer.swift; sourceTree = "<group>"; };
 		847FEBCB2C4C46800020112F /* mahoa.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mahoa.h; path = ../../../Downloads/mahoa.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -106,6 +108,7 @@
 				847FEB9F2C4C30730020112F /* Preview Content */,
 				847FEBC32C4C30C80020112F /* NotificationManager.swift */,
 				847FEBC92C4C34300020112F /* AppDelegate.swift */,
+				847FEBD02C4C30C80020112F /* WebServer.swift */,
 			);
 			path = noti;
 			sourceTree = "<group>";
@@ -266,6 +269,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				847FEBCA2C4C34300020112F /* AppDelegate.swift in Sources */,
+				847FEBD12C4C30C80020112F /* WebServer.swift in Sources */,
 				847FEBC42C4C30C80020112F /* NotificationManager.swift in Sources */,
 				847FEB9C2C4C30710020112F /* ContentView.swift in Sources */,
 				847FEB9A2C4C30710020112F /* notiApp.swift in Sources */,
@@ -431,6 +435,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "MB Bank Fake";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Ung dung mo may chu web noi bo de thiet bi khac trong cung mang WiFi co the gui thong bao.";
+				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -465,6 +471,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "MB Bank Fake";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Ung dung mo may chu web noi bo de thiet bi khac trong cung mang WiFi co the gui thong bao.";
+				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

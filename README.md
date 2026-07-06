@@ -54,9 +54,39 @@ Chạy script `ipabuild.sh` để tạo file IPA hoặc TIPA.
 
 File IPA hoặc TIPA sẽ được tạo trong thư mục gốc của dự án với tên `noti.tipa` hoặc `noti.ipa` tùy thuộc vào lựa chọn của bạn.
 
+## Tính năng điều khiển từ xa (Web trong cùng mạng Wi‑Fi)
+
+Khi mở app trên iPhone, ứng dụng tự động bật một **máy chủ web nhúng** lắng nghe trên
+`0.0.0.0:8080` (mọi giao diện mạng). Thiết bị khác cùng Wi‑Fi (laptop, điện thoại...) chỉ cần
+mở trình duyệt tới địa chỉ hiển thị trong app, ví dụ `http://192.168.1.10:8080`, là có thể tạo
+thông báo gửi thẳng tới iPhone.
+
+- **Chạy nền:** app dùng background mode `audio` + âm thanh im lặng để giữ máy chủ sống khi bạn
+  chuyển sang app khác. Thiết bị khác vẫn gửi thông báo bình thường.
+- **Quyền cần cấp trên iPhone:** Thông báo (Notifications) và Mạng cục bộ (Local Network).
+
+### Số dư ảo (lưu bền)
+
+- Số dư được lưu qua `UserDefaults`, **mở lại app vẫn giữ nguyên**.
+- Khi tạo thông báo, chọn **+ (cộng)** hoặc **− (trừ)**; trừ **không cho số dư xuống dưới 0**
+  (tối thiểu = 0). Mỗi giao dịch tự cộng/trừ vào số dư ảo rồi lưu lại.
+- **Ngày/giờ mặc định là hiện tại**, chỉ đổi khi bạn tự nhập.
+- **Số tiền và số dư tự thêm dấu phẩy** ngăn cách hàng nghìn (ví dụ `1,000,000`).
+
+Các endpoint của máy chủ: `GET /` (trang điều khiển), `GET /state` (số dư hiện tại),
+`POST /setBalance` (đặt số dư), `GET|POST /notify` (tạo thông báo).
+
+## CI/CD (GitHub Actions)
+
+`.github/workflows/build.yml` tự build file `.tipa` **chưa ký** trên runner macOS mỗi khi push
+lên `main`, push tag `v*`, hoặc chạy thủ công (workflow_dispatch). File được tải lên artifact
+`noti-tipa`; khi push tag sẽ tạo GitHub Release đính kèm file `.tipa`.
+
 ## Cấu trúc Dự án
 
-- `ContentView.swift`: Tệp Swift chính chứa giao diện người dùng và logic của ứng dụng.
+- `ContentView.swift`: Giao diện người dùng và logic của ứng dụng (form tạo thông báo, số dư ảo).
+- `NotificationManager.swift`: Tạo thông báo cục bộ; `BalanceStore` (số dư ảo) và `NumberFormat`.
+- `WebServer.swift`: Máy chủ HTTP nhúng (`NWListener`), trang web điều khiển, và `BackgroundKeeper`.
 - `ipabuild.sh`: Script xây dựng để tạo file IPA hoặc TIPA.
 - `noti.entitlements`: File chứa các entitlements cần thiết cho ứng dụng.
 
