@@ -433,10 +433,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"noti/Preview Content\"";
 				DEVELOPMENT_TEAM = P8ZT6JYD24;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "MB Bank Fake";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Ung dung mo may chu web noi bo de thiet bi khac trong cung mang WiFi co the gui thong bao.";
-				INFOPLIST_KEY_UIBackgroundModes = audio;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "noti/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -469,10 +467,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"noti/Preview Content\"";
 				DEVELOPMENT_TEAM = P8ZT6JYD24;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "MB Bank Fake";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Ung dung mo may chu web noi bo de thiet bi khac trong cung mang WiFi co the gui thong bao.";
-				INFOPLIST_KEY_UIBackgroundModes = audio;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "noti/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

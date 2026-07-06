@@ -649,9 +649,10 @@ final class BackgroundKeeper: NSObject, AVAudioPlayerDelegate {
 
     private func configureSession() {
         do {
-            // .playback + .mixWithOthers: phát nền mà vẫn cho nhạc khác chạy cùng.
+            // .playback (KHÔNG mixWithOthers): app trở thành audio chính -> iOS cho chạy nền
+            // ổn định. Đánh đổi: tạm dừng nhạc/khác đang phát trên máy.
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, options: [.mixWithOthers])
+            try session.setCategory(.playback, options: [])
             try session.setActive(true, options: [])
         } catch {
             print("[BackgroundKeeper] Lỗi session: \(error.localizedDescription)")
