@@ -34,7 +34,6 @@ struct ContentView: View {
                         .font(.callout)
                         .fontWeight(.semibold)
                         .foregroundColor(.blue)
-                        .textSelection(.enabled)
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 4)
